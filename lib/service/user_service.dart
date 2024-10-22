@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
-import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 class UserService {
@@ -156,16 +155,39 @@ class UserService {
     });
   }
 
-  Stream<List<Map<String, dynamic>>> getMessages(
-      String currentUserId, String otherUserId) async* {
-    List<String> ids = [userId, otherUserId];
+  Future<List<DocumentSnapshot<Object?>>> getMessagesPaginated(
+      String currentUserId, String otherUserId,
+      {int limit = 20, DocumentSnapshot? lastDocument}) async {
+    List<String> ids = [currentUserId, otherUserId];
     ids.sort();
     String chatId = ids.join('_');
-    yield* FirebaseFirestore.instance
+
+    Query query = FirebaseFirestore.instance
         .collection('chats')
         .doc(chatId)
         .collection('messages')
         .orderBy('time', descending: true)
+        .limit(10);
+
+    if (lastDocument != null) {
+      query = query.startAfterDocument(lastDocument);
+    }
+    final QuerySnapshot snapshot = await query.get();
+
+    return snapshot.docs.toList();
+  }
+
+  Stream<List<Map<String, dynamic>>> getMessages(
+      String currentUserId, String otherUserId) async* {
+    List<String> ids = [currentUserId, otherUserId];
+    ids.sort();
+    String chatId = ids.join('_');
+    yield* firestore
+        .collection('chats')
+        .doc(chatId)
+        .collection('messages')
+        .orderBy('time', descending: true)
+        .limit(1)
         .snapshots()
         .map((snapshot) => snapshot.docs.map((doc) => doc.data()).toList());
   }
