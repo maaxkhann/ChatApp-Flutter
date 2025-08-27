@@ -49,7 +49,11 @@ class _ChatScreenState extends State<ChatScreen> {
                 },
                 leading: const CircleAvatar(radius: 25),
                 title: Text(chatUsers?.userModel?.name ?? ''),
-                subtitle: Text(chatUsers?.lastMessage ?? ''),
+                subtitle: Text(
+                    chatUsers?.lastMessage != ''
+                        ? chatUsers!.lastMessage!
+                        : 'Voice',
+                    maxLines: 1),
                 trailing: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -66,7 +70,7 @@ class _ChatScreenState extends State<ChatScreen> {
                         child: FittedBox(
                           child: Text(
                             chatUsers!.unreadCount.toString(),
-                            style: TextStyle(fontSize: 10),
+                            style: const TextStyle(fontSize: 10),
                           ),
                         ),
                       )

@@ -1,11 +1,17 @@
+import 'dart:io';
+
+import 'package:audio_waveforms/audio_waveforms.dart';
 import 'package:chat_app/components/custom_textfield.dart';
 import 'package:chat_app/controller/chat_controller.dart';
 import 'package:chat_app/controller/user_controller.dart';
+import 'package:chat_app/screens/chat/widget/voice_message_widget.dart';
 import 'package:chat_app/utilities/date_time_helper.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
+import 'package:path_provider/path_provider.dart';
 
 class ChatMainScreen extends StatefulWidget {
   // final String idd;
@@ -20,120 +26,174 @@ class _ChatMainScreenState extends State<ChatMainScreen> {
   final userController = Get.find<UserController>();
   final msgController = TextEditingController();
   String? otherUserId;
+  String? recordedFilePath;
+  final RecorderController recorderController = RecorderController();
+  final PlayerController playerController = PlayerController();
+  bool isRecording = false;
+  String? audioPath;
 
   @override
   void initState() {
     super.initState();
     otherUserId = Get.arguments['otherUserId'] ?? '';
     chatController.markMessagesAsRead(otherUserId ?? '');
+    recorderController.checkPermission();
+  }
+
+  @override
+  void dispose() {
+    recorderController.dispose();
+    playerController.dispose();
+    super.dispose();
+  }
+
+  void startRecording() async {
+    setState(() => isRecording = true);
+    final dir = await getApplicationDocumentsDirectory();
+    audioPath =
+        "${dir.path}/recorded_${DateTime.now().millisecondsSinceEpoch}.m4a";
+
+    await recorderController.record(path: audioPath!);
+  }
+
+  void stopRecording() async {
+    setState(() => isRecording = false);
+    await recorderController.stop();
+
+    if (audioPath == null) return null;
+
+    final file = File(audioPath!);
+    final storageRef = FirebaseStorage.instance
+        .ref()
+        .child("voice_messages/${DateTime.now().millisecondsSinceEpoch}.m4a");
+
+    await storageRef.putFile(file);
+    final downloadUrl = await storageRef.getDownloadURL();
+
+    if (audioPath != null) {
+      chatController.sendMessage(
+        otherUserId: otherUserId ?? '',
+        senderName: userController.userModel.value?.name ?? '',
+        message: '',
+        mediaUrl: downloadUrl,
+        participants: [chatController.auth.currentUser!.uid, otherUserId ?? ''],
+        type: 'voice',
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       resizeToAvoidBottomInset: true,
-      body: SafeArea(
-        child: StreamBuilder(
-            stream: chatController.getMessages(otherUserId ?? ''),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              if (!snapshot.hasData || (snapshot.data?.isEmpty ?? false)) {
-                return const Center(child: Text('No Messages'));
-              }
-              return ListView.separated(
-                  itemCount: snapshot.data!.length,
-                  reverse: true,
-                  separatorBuilder: (context, index) =>
-                      const SizedBox(height: 10),
-                  itemBuilder: (context, index) {
-                    final chat = snapshot.data![index];
-                    final isMine = chatController.auth.currentUser!.uid ==
-                        chat.currentUserId;
-                    final date = (chat.timestamp)?.toDate();
-                    String? dateLabel;
-                    if (date != null) {
-                      // Show label if first message (in reversed list) or day is different from previous message
-                      if (index == snapshot.data!.length - 1 ||
-                          (snapshot.data![index + 1].timestamp)?.toDate().day !=
-                              date.day) {
-                        dateLabel = DateTimeHelper.formatTimestamp(date);
-                      }
+      body: StreamBuilder(
+          stream: chatController.getMessages(otherUserId ?? ''),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (!snapshot.hasData || (snapshot.data?.isEmpty ?? false)) {
+              return const Center(child: Text('No Messages'));
+            }
+            return ListView.separated(
+                itemCount: snapshot.data!.length,
+                reverse: true,
+                separatorBuilder: (context, index) =>
+                    const SizedBox(height: 10),
+                itemBuilder: (context, index) {
+                  final chat = snapshot.data![index];
+                  final isMine = chatController.auth.currentUser!.uid ==
+                      chat.currentUserId;
+                  final date = (chat.timestamp)?.toDate();
+                  String? dateLabel;
+                  if (date != null) {
+                    // Show label if first message (in reversed list) or day is different from previous message
+                    if (index == snapshot.data!.length - 1 ||
+                        (snapshot.data![index + 1].timestamp)?.toDate().day !=
+                            date.day) {
+                      dateLabel = DateTimeHelper.formatTimestamp(date);
                     }
-                    return Column(
-                      children: [
-                        if (dateLabel != null)
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                vertical: 4.0, horizontal: 6),
-                            margin: const EdgeInsets.only(bottom: 8),
-                            decoration: BoxDecoration(
-                                color: Colors.grey,
-                                borderRadius: BorderRadius.circular(10)),
-                            child: Text(
-                              dateLabel,
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: Colors.grey[600],
-                              ),
-                            ),
-                          ),
-                        Align(
-                          alignment: isMine
-                              ? Alignment.centerRight
-                              : Alignment.centerLeft,
-                          child: Container(
-                            padding: const EdgeInsets.all(8),
-                            margin: const EdgeInsets.symmetric(horizontal: 12),
-                            decoration: BoxDecoration(
-                              color: Colors.blue,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: IntrinsicWidth(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    chat.message ?? '',
-                                    style: const TextStyle(fontSize: 14),
-                                    textAlign: TextAlign.left,
-                                  ),
-                                  Align(
-                                    alignment: Alignment.centerRight,
-                                    child: Text(
-                                        DateFormat('hh:mm a')
-                                            .format(chat.timestamp!.toDate()),
-                                        style: const TextStyle(fontSize: 10)),
-                                  ),
-                                ],
-                              ),
+                  }
+                  return Column(
+                    children: [
+                      if (dateLabel != null)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 4.0, horizontal: 6),
+                          margin: const EdgeInsets.only(bottom: 8),
+                          decoration: BoxDecoration(
+                              color: Colors.grey,
+                              borderRadius: BorderRadius.circular(10)),
+                          child: Text(
+                            dateLabel,
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.grey[600],
                             ),
                           ),
                         ),
-                        if (isMine)
-                          Align(
-                              alignment: isMine
-                                  ? Alignment.centerRight
-                                  : Alignment.centerLeft,
-                              child: Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(horizontal: 10),
-                                child: Icon(
-                                  Icons.check_circle_outline,
-                                  color: chat.participants?.length !=
-                                          chat.readBy?.length
-                                      ? Colors.black
-                                      : Colors.blue,
-                                  size: 15,
-                                ),
-                              ))
-                      ],
-                    );
-                  });
-            }),
-      ),
+                      Align(
+                        alignment: isMine
+                            ? Alignment.centerRight
+                            : Alignment.centerLeft,
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          margin: const EdgeInsets.symmetric(horizontal: 12),
+                          decoration: BoxDecoration(
+                            color: Colors.blue,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: IntrinsicWidth(
+                            child: chat.type == 'voice'
+                                ? VoiceMessageWidget(
+                                    key: ValueKey(chat.id ??
+                                        chat.timestamp), // 🔑 unique identity
+                                    url: chat.mediaUrl ?? '',
+                                    timeStamp: chat.timestamp!)
+                                : Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        chat.message ?? '',
+                                        style: const TextStyle(fontSize: 14),
+                                        textAlign: TextAlign.left,
+                                      ),
+                                      Align(
+                                        alignment: Alignment.centerRight,
+                                        child: Text(
+                                            DateFormat('hh:mm a').format(
+                                                chat.timestamp!.toDate()),
+                                            style:
+                                                const TextStyle(fontSize: 10)),
+                                      ),
+                                    ],
+                                  ),
+                          ),
+                        ),
+                      ),
+                      if (isMine)
+                        Align(
+                            alignment: isMine
+                                ? Alignment.centerRight
+                                : Alignment.centerLeft,
+                            child: Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 10),
+                              child: Icon(
+                                Icons.check_circle_outline,
+                                color: chat.participants?.length !=
+                                        chat.readBy?.length
+                                    ? Colors.black
+                                    : Colors.blue,
+                                size: 15,
+                              ),
+                            ))
+                    ],
+                  );
+                });
+          }),
       // appBar: AppBar(
       //   title: getOnlineStatus(),
       //   automaticallyImplyLeading: false,
@@ -225,29 +285,48 @@ class _ChatMainScreenState extends State<ChatMainScreen> {
       //             ],
       //           );
       //         })),
-      bottomNavigationBar: Padding(
-        padding: EdgeInsets.only(
-            top: 20,
-            right: 20,
-            left: 20,
-            bottom: MediaQuery.of(context).viewInsets.bottom + 20),
-        child: CustomTextField(
-          controller: msgController,
-          hintText: 'Enter message',
-          textAlignVertical: TextAlignVertical.center,
-          suffixIcon: IconButton(
-              onPressed: () {
-                chatController.sendMessage(
-                    otherUserId: otherUserId ?? '',
-                    senderName: userController.userModel.value?.name ?? '',
-                    message: msgController.text.trim(),
-                    participants: [
-                      chatController.auth.currentUser!.uid,
-                      otherUserId ?? ''
-                    ]);
-                msgController.clear();
-              },
-              icon: const Icon(Icons.send)),
+      bottomNavigationBar: SafeArea(
+        child: Container(
+          padding: EdgeInsets.only(
+              top: 10,
+              right: 20,
+              left: 20,
+              bottom: MediaQuery.of(context).viewInsets.bottom + 10),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(
+                child: CustomTextField(
+                  controller: msgController,
+                  hintText: 'Enter message',
+                  textAlignVertical: TextAlignVertical.center,
+                  suffixIcon: IconButton(
+                      onPressed: () {
+                        chatController.sendMessage(
+                            otherUserId: otherUserId ?? '',
+                            senderName:
+                                userController.userModel.value?.name ?? '',
+                            message: msgController.text.trim(),
+                            participants: [
+                              chatController.auth.currentUser!.uid,
+                              otherUserId ?? ''
+                            ]);
+                        msgController.clear();
+                      },
+                      icon: const Icon(Icons.send)),
+                ),
+              ),
+              IconButton(
+                  onPressed: () {
+                    if (isRecording) {
+                      stopRecording();
+                    } else {
+                      startRecording();
+                    }
+                  },
+                  icon: Icon(isRecording ? Icons.stop : Icons.mic))
+            ],
+          ),
         ),
       ),
     );

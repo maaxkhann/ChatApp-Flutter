@@ -40,6 +40,7 @@ class ChatService {
           senderName: senderName,
           chatId: chatId,
           message: message,
+          mediaUrl: mediaUrl,
           type: type,
           isGroup: isGroup,
           participants: participants,
