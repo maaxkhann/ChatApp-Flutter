@@ -1,8 +1,10 @@
 import 'package:chat_app/firebase_options.dart';
-import 'package:chat_app/router/app_router.dart';
+import 'package:chat_app/router/app_pages.dart';
+import 'package:chat_app/router/app_routes.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
+import 'package:get/get.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -18,11 +20,13 @@ class MyApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return MaterialApp.router(
-      routerConfig: AppRouter.router,
+    return GetMaterialApp(
+      initialRoute: AppRoutes.loginView,
+      getPages: AppPages.routes,
       title: 'Chat App',
       debugShowCheckedModeBanner: false,
       builder: EasyLoading.init(),
+      
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,

@@ -1,41 +1,57 @@
-import 'package:chat_app/service/user_service.dart';
-import 'package:chat_app/shared/constants/navigation/navigation.dart';
-import 'package:chat_app/shared/constants/navigation/screen_params.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:chat_app/controller/user_controller.dart';
+import 'package:chat_app/router/app_routes.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:get/get_core/src/get_main.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
   @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  final userModel = Get.put(UserController());
+  @override
+  void initState() {
+    super.initState();
+    userModel.getUserData();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final userController = Get.put(UserController());
     return Scaffold(
       appBar: AppBar(automaticallyImplyLeading: false),
-      body: StreamBuilder<QuerySnapshot>(
-          stream: UserService.instance.getUserList(),
+      body: StreamBuilder(
+          stream: userController.getUsers(),
           builder: (ctx, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const Center(child: CircularProgressIndicator());
             }
+            if (!snapshot.hasData) {
+              return const Text('No data');
+            }
             return ListView.separated(
-                itemCount: snapshot.data?.docs.length ?? 0,
+                itemCount: snapshot.data?.length ?? 0,
                 separatorBuilder: (context, index) => const Divider(),
                 itemBuilder: (context, index) {
+                  final users = snapshot.data?[index];
                   return Column(
                     children: [
-                      Text(snapshot.data?.docs[index]['name']),
-                      Text(snapshot.data?.docs[index]['email']),
+                      Text(users?.name ?? ''),
+                      Text(users?.email ?? ''),
                       ElevatedButton(
-                          onPressed: () => Navigation.pushNamed('/chat_main',
-                              arguments: ChatMainScreenArgs(
-                                  id: snapshot.data?.docs[index]['userId'])),
+                          onPressed: () => Get.toNamed(AppRoutes.chatMainView,
+                              arguments: {'otherUserId': users?.userId}),
                           child: const Text('Chat'))
                     ],
                   );
                 });
           }),
-      floatingActionButton:
-          FloatingActionButton(onPressed: () => Navigation.pushNamed('/chat')),
+      floatingActionButton: FloatingActionButton(
+          onPressed: () => Get.toNamed(AppRoutes.chatView)),
     );
   }
 }

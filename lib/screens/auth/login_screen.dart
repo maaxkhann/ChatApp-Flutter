@@ -133,11 +133,14 @@
 
 import 'package:chat_app/components/custom_textfield.dart';
 import 'package:chat_app/components/primary_button.dart';
+import 'package:chat_app/controller/auth_controller.dart';
+import 'package:chat_app/router/app_routes.dart';
 import 'package:chat_app/service/user_service.dart';
 import 'package:chat_app/shared/constants/navigation/navigation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
+import 'package:get/get.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -149,6 +152,7 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
+  final authController = Get.put(AuthController());
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -181,17 +185,9 @@ class _LoginScreenState extends State<LoginScreen> {
                   'Login',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                 ),
-                onPressed: () async {
-                  UserCredential userCredential = await FirebaseAuth.instance
-                      .signInWithEmailAndPassword(
-                          email: emailController.text,
-                          password: passwordController.text);
-                  if (userCredential.user != null) {
-                    EasyLoading.showToast('Logged In');
-                    Userr.ins.setId(FirebaseAuth.instance.currentUser!.uid);
-                    //    Get.to(() => const HomeScreen());
-                    Navigation.pushNamed('/home');
-                  }
+                onPressed: () {
+                  authController.loginUser(emailController.text.trim(),
+                      passwordController.text.trim());
                 }),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -200,7 +196,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     style:
                         TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
                 TextButton(
-                    onPressed: () => Navigation.pushNamed('/register'),
+                    onPressed: () => Get.toNamed(AppRoutes.registerView),
                     //       onPressed: () => context.push('/register'),
                     child: const Text('Sign Up',
                         style: TextStyle(

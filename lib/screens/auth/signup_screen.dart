@@ -1,10 +1,13 @@
 import 'package:chat_app/components/custom_textfield.dart';
 import 'package:chat_app/components/primary_button.dart';
+import 'package:chat_app/controller/auth_controller.dart';
+import 'package:chat_app/router/app_routes.dart';
 import 'package:chat_app/service/user_service.dart';
 import 'package:chat_app/shared/constants/navigation/navigation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
+import 'package:get/get.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -18,6 +21,7 @@ class _LoginScreenState extends State<SignUpScreen> {
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
   final confirmPasswordController = TextEditingController();
+  final authController = Get.find<AuthController>();
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -60,18 +64,12 @@ class _LoginScreenState extends State<SignUpScreen> {
                   'Sign Up',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                 ),
-                onPressed: () async {
-                  UserCredential userCredential = await FirebaseAuth.instance
-                      .createUserWithEmailAndPassword(
-                          email: emailController.text.trim(),
-                          password: passwordController.text.trim());
-                  if (userCredential.user != null) {
-                    UserService.instance.storeUserData(
-                        nameController.text, emailController.text);
-                    EasyLoading.showToast('Account created');
-                    //   Get.to(() => const LoginScreen());
-                    Navigation.pushNamed('/login');
-                  }
+                onPressed: () {
+                  authController.registerUser(
+                      nameController.text.trim(),
+                      emailController.text.trim(),
+                      passwordController.text.trim(),
+                      confirmPasswordController.text.trim());
                 }),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -80,7 +78,7 @@ class _LoginScreenState extends State<SignUpScreen> {
                     style:
                         TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
                 TextButton(
-                    onPressed: () => Navigation.pushNamed('/login'),
+                    onPressed: () => Get.toNamed(AppRoutes.loginView),
                     child: const Text('Login',
                         style: TextStyle(
                             fontSize: 16, fontWeight: FontWeight.w500)))
