@@ -101,6 +101,7 @@ class ChatService {
           // .doc(chatId)
           // .collection('messages')
           .where('participants', arrayContains: auth.currentUser!.uid)
+          .where('isGroup', isEqualTo: false)
           .snapshots()
           .asyncMap((snap) async {
         final chatModel = Future.wait(snap.docs.map((doc) async {
