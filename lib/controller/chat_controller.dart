@@ -1,9 +1,12 @@
 import 'package:chat_app/exceptions/app_exceptions.dart';
 import 'package:chat_app/model/chat_model.dart';
+import 'package:chat_app/router/app_routes.dart';
 import 'package:chat_app/service/chat_service.dart';
 import 'package:chat_app/utilities/pops.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:get/get.dart';
+import 'package:get/get_core/src/get_main.dart';
 
 class ChatController {
   final FirebaseAuth auth = FirebaseAuth.instance;
@@ -61,6 +64,32 @@ class ChatController {
   }
 
   void markMessagesAsRead(String otherUserId) {
-    chatService.markMessagesAsRead(otherUserId);
+    try {
+      chatService.markMessagesAsRead(otherUserId);
+    } catch (e) {
+      if (e is AppException) {
+        Pops.showError(e.toString());
+      } else {
+        Pops.showError('Something went wrong');
+      }
+    }
+  }
+
+  void createGroup(String groupName, List<String> groupMembers) {
+    Pops.startLoading();
+    try {
+      chatService.createGroup(groupName, groupMembers).then((val) {
+        Pops.stopLoading();
+        Pops.showToast('Group created');
+        Get.offAllNamed(AppRoutes.homeView);
+      });
+    } catch (e) {
+      Pops.stopLoading();
+      if (e is AppException) {
+        Pops.showError(e.toString());
+      } else {
+        Pops.showError('Something went wrong');
+      }
+    }
   }
 }

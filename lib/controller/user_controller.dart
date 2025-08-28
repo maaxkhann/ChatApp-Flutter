@@ -7,6 +7,7 @@ import 'package:get/get.dart';
 class UserController extends GetxController {
   UserService userService = UserService();
   final userModel = Rxn<UserModel>();
+  final RxSet<String> selectedUsers = <String>{}.obs;
 
   Stream<List<UserModel>> getUsers() {
     return userService.getUsers().handleError((error) {

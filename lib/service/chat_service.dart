@@ -156,4 +156,25 @@ class ChatService {
       }
     }
   }
+
+  Future<void> createGroup(String groupName, List<String> groupMembers) async {
+    try {
+      final groupId = firestore.collection('chats').doc().id;
+      await firestore.collection('chats').doc(groupId).set({
+        'chatId': groupId,
+        'groupName': groupName,
+        'participants': groupMembers,
+        'isGroup': true,
+        'createdBy': auth.currentUser!.uid,
+        'timeStamp': FieldValue.serverTimestamp(),
+        'lastMessage': '',
+      });
+    } on FirebaseException catch (e) {
+      throw handleFirestoreException(e);
+    } on SocketException catch (e) {
+      throw handleNetworkException(e);
+    } catch (e) {
+      throw UnknownException(e.toString());
+    }
+  }
 }

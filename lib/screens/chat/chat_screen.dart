@@ -1,13 +1,7 @@
 import 'package:chat_app/controller/chat_controller.dart';
 import 'package:chat_app/router/app_routes.dart';
-import 'package:chat_app/screens/chat/chat_main_screen.dart';
-import 'package:chat_app/service/user_service.dart';
-import 'package:chat_app/shared/constants/navigation/navigation.dart';
-import 'package:chat_app/shared/constants/navigation/screen_params.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:get/get_core/src/get_main.dart';
 import 'package:intl/intl.dart';
 
 class ChatScreen extends StatefulWidget {
@@ -22,7 +16,18 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(),
+      appBar: AppBar(
+        actions: [
+          PopupMenuButton(itemBuilder: (context) {
+            return [
+              PopupMenuItem(
+                  onTap: () => Get.toNamed(AppRoutes.createGroupView),
+                  value: 'Create group',
+                  child: const Text('Create group'))
+            ];
+          })
+        ],
+      ),
       body: StreamBuilder(
         stream: chatController.getChatUsers(),
         builder: (ctx, snapshot) {

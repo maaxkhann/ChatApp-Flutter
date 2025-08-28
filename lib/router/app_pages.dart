@@ -3,6 +3,7 @@ import 'package:chat_app/screens/auth/login_screen.dart';
 import 'package:chat_app/screens/auth/signup_screen.dart';
 import 'package:chat_app/screens/chat/chat_main_screen.dart';
 import 'package:chat_app/screens/chat/chat_screen.dart';
+import 'package:chat_app/screens/chat/create_group_screen.dart';
 import 'package:chat_app/screens/home/home_screen.dart';
 import 'package:get/get.dart';
 
@@ -42,6 +43,11 @@ class AppPages {
       name: AppRoutes.chatMainView,
       transition: Transition.fadeIn,
       page: () => const ChatMainScreen(),
+    ),
+    GetPage(
+      name: AppRoutes.createGroupView,
+      transition: Transition.fadeIn,
+      page: () => const CreateGroupScreen(),
     ),
   ];
 }
