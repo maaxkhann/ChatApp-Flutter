@@ -6,7 +6,6 @@ import 'package:chat_app/controller/chat_controller.dart';
 import 'package:chat_app/controller/user_controller.dart';
 import 'package:chat_app/screens/chat/widget/voice_message_widget.dart';
 import 'package:chat_app/utilities/date_time_helper.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -35,7 +34,7 @@ class _ChatMainScreenState extends State<ChatMainScreen> {
   @override
   void initState() {
     super.initState();
-    otherUserId = Get.arguments['otherUserId'] ?? '';
+    otherUserId = Get.arguments['otherUserId'] ?? Get.arguments['groupId'];
     chatController.markMessagesAsRead(otherUserId ?? '');
     recorderController.checkPermission();
   }
@@ -87,7 +86,8 @@ class _ChatMainScreenState extends State<ChatMainScreen> {
     return Scaffold(
       resizeToAvoidBottomInset: true,
       body: StreamBuilder(
-          stream: chatController.getMessages(otherUserId ?? ''),
+          stream: chatController.getMessages(otherUserId ?? '',
+              isGroup: Get.arguments['isGroup']),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const Center(child: CircularProgressIndicator());
@@ -307,10 +307,14 @@ class _ChatMainScreenState extends State<ChatMainScreen> {
                             senderName:
                                 userController.userModel.value?.name ?? '',
                             message: msgController.text.trim(),
-                            participants: [
-                              chatController.auth.currentUser!.uid,
-                              otherUserId ?? ''
-                            ]);
+                            isGroup: Get.arguments['isGroup'],
+                            groupId: Get.arguments['groupId'],
+                            groupName: Get.arguments['groupName'],
+                            participants: Get.arguments['participants'] ??
+                                [
+                                  chatController.auth.currentUser!.uid,
+                                  otherUserId ?? ''
+                                ]);
                         msgController.clear();
                       },
                       icon: const Icon(Icons.send)),

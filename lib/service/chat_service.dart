@@ -23,10 +23,12 @@ class ChatService {
       List<String>? participants,
       List<String>? deletedFor,
       String? mediaUrl,
+      String? groupId,
       String? groupName,
       String type = "text",
       bool isGroup = false}) async {
-    final chatId = channelId(auth.currentUser!.uid, otherUserId);
+    final chatId = groupId ?? channelId(auth.currentUser!.uid, otherUserId);
+
     try {
       DocumentReference msgRef = firestore
           .collection('chats')
@@ -43,6 +45,7 @@ class ChatService {
           mediaUrl: mediaUrl,
           type: type,
           isGroup: isGroup,
+          groupName: groupName,
           participants: participants,
           timestamp: Timestamp.now(),
           readBy: [auth.currentUser!.uid],
@@ -68,8 +71,10 @@ class ChatService {
     }
   }
 
-  Stream<List<ChatModel>> getMessages(String otherUserId) {
-    final chatId = channelId(auth.currentUser!.uid, otherUserId);
+  Stream<List<ChatModel>> getMessages(String otherUserId,
+      {bool isGroup = false}) {
+    final chatId =
+        isGroup ? otherUserId : channelId(auth.currentUser!.uid, otherUserId);
 
     try {
       return firestore
@@ -101,30 +106,35 @@ class ChatService {
           // .doc(chatId)
           // .collection('messages')
           .where('participants', arrayContains: auth.currentUser!.uid)
-          .where('isGroup', isEqualTo: false)
+          //  .where('isGroup', isEqualTo: false)
           .snapshots()
           .asyncMap((snap) async {
         final chatModel = Future.wait(snap.docs.map((doc) async {
           final data = doc.data();
           final chatId = doc.id;
+          final isGroup = data['isGroup'] ?? false;
 
-          final otherUserId = (data['participants'] as List<dynamic>)
-              .firstWhere((id) => id != auth.currentUser!.uid);
+          if (!isGroup) {
+            final otherUserId = (data['participants'] as List<dynamic>)
+                .firstWhere((id) => id != auth.currentUser!.uid);
 
-          final userDoc =
-              await firestore.collection('Users').doc(otherUserId).get();
-          final messagesSnap = await firestore
-              .collection('chats')
-              .doc(chatId)
-              .collection('messages')
-              .get();
-          final unreadCount = messagesSnap.docs.where((msg) {
-            final readBy = List<String>.from(msg.data()['readBy'] ?? []);
-            return !readBy.contains(auth.currentUser!.uid);
-          }).length;
+            final userDoc =
+                await firestore.collection('Users').doc(otherUserId).get();
+            final messagesSnap = await firestore
+                .collection('chats')
+                .doc(chatId)
+                .collection('messages')
+                .get();
+            final unreadCount = messagesSnap.docs.where((msg) {
+              final readBy = List<String>.from(msg.data()['readBy'] ?? []);
+              return !readBy.contains(auth.currentUser!.uid);
+            }).length;
 
-          return ChatModel.fromMap(data, doc.id, userModel: userDoc.data())
-              .copyWith(unreadCount: unreadCount);
+            return ChatModel.fromMap(data, doc.id, userModel: userDoc.data())
+                .copyWith(unreadCount: unreadCount);
+          } else {
+            return ChatModel.fromMap(data, doc.id);
+          }
         }));
         return chatModel;
       });

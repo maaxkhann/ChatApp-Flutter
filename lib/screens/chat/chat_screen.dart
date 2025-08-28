@@ -46,39 +46,66 @@ class _ChatScreenState extends State<ChatScreen> {
               return ListTile(
                 onTap: () async {
                   final otherUserId = chatUsers?.participants?.firstWhere(
-                      (id) => id != chatController.auth.currentUser?.uid);
+                    (id) => id != chatController.auth.currentUser?.uid,
+                    orElse: () => '',
+                  );
 
-                  Get.toNamed(AppRoutes.chatMainView,
-                          arguments: {'otherUserId': otherUserId})
-                      ?.then((val) => setState(() {}));
+                  if (otherUserId != null &&
+                      otherUserId.isNotEmpty &&
+                      !chatUsers!.isGroup!) {
+                    Get.toNamed(
+                      AppRoutes.chatMainView,
+                      arguments: {
+                        'otherUserId': otherUserId,
+                        'isGroup': false,
+                      },
+                    )?.then((val) => setState(() {}));
+                  } else {
+                    Get.toNamed(
+                      AppRoutes.chatMainView,
+                      arguments: {
+                        'groupId': chatUsers?.chatId,
+                        'isGroup': true,
+                        'groupName': chatUsers?.groupName,
+                        'participants': chatUsers?.participants
+                      },
+                    )?.then((val) => setState(() {}));
+                  }
                 },
                 leading: const CircleAvatar(radius: 25),
-                title: Text(chatUsers?.userModel?.name ?? ''),
+                title: Text(
+                  chatUsers?.isGroup == true
+                      ? (chatUsers?.groupName ?? 'Unnamed Group')
+                      : (chatUsers?.userModel?.name ?? 'Unknown User'),
+                ),
                 subtitle: Text(
-                    chatUsers?.lastMessage != ''
-                        ? chatUsers!.lastMessage!
-                        : 'Voice',
-                    maxLines: 1),
+                  (chatUsers?.lastMessage?.isNotEmpty ?? false)
+                      ? (chatUsers?.lastMessage ?? '')
+                      : chatUsers?.isGroup == true
+                          ? ''
+                          : 'Voice',
+                  maxLines: 1,
+                ),
                 trailing: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    chatUsers?.lastMessageTime != null
-                        ? Text(
-                            DateFormat('hh:mm a')
-                                .format(chatUsers!.lastMessageTime!.toDate()),
-                          )
-                        : const SizedBox.shrink(),
-
+                    if (chatUsers?.lastMessageTime != null)
+                      Text(
+                        DateFormat('hh:mm a').format(
+                          chatUsers!.lastMessageTime!.toDate(),
+                        ),
+                      ),
                     if ((chatUsers?.unreadCount ?? 0) > 0)
                       CircleAvatar(
                         radius: 12,
                         child: FittedBox(
                           child: Text(
-                            chatUsers!.unreadCount.toString(),
+                            (chatUsers?.unreadCount ?? 0).toString(),
                             style: const TextStyle(fontSize: 10),
                           ),
                         ),
-                      )
+                      ),
+
                     // snapshot.data?[index]['unreadCount'] != null &&
                     //         snapshot.data?[index]['unreadCount'] > 0
                     //     ? CircleAvatar(

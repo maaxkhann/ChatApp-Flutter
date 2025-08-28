@@ -6,7 +6,6 @@ import 'package:chat_app/utilities/pops.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:get/get.dart';
-import 'package:get/get_core/src/get_main.dart';
 
 class ChatController {
   final FirebaseAuth auth = FirebaseAuth.instance;
@@ -20,6 +19,7 @@ class ChatController {
       List<String>? participants,
       List<String>? deletedFor,
       String? mediaUrl,
+      String? groupId,
       String? groupName,
       String type = "text",
       bool isGroup = false}) {
@@ -31,6 +31,7 @@ class ChatController {
           participants: participants,
           deletedFor: deletedFor,
           mediaUrl: mediaUrl,
+          groupId: groupId,
           groupName: groupName,
           type: type,
           isGroup: isGroup);
@@ -43,8 +44,11 @@ class ChatController {
     }
   }
 
-  Stream<List<ChatModel>> getMessages(String otherUserId) {
-    return chatService.getMessages(otherUserId).handleError((error) {
+  Stream<List<ChatModel>> getMessages(String otherUserId,
+      {bool isGroup = false}) {
+    return chatService
+        .getMessages(otherUserId, isGroup: isGroup)
+        .handleError((error) {
       if (error is AppException) {
         Pops.showError(error.message);
       } else {
