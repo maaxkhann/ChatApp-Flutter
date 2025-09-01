@@ -35,7 +35,8 @@ class _ChatMainScreenState extends State<ChatMainScreen> {
   void initState() {
     super.initState();
     otherUserId = Get.arguments['otherUserId'] ?? Get.arguments['groupId'];
-    chatController.markMessagesAsRead(otherUserId ?? '');
+    chatController.markMessagesAsRead(otherUserId ?? '',
+        isGroup: Get.arguments['isGroup']);
     recorderController.checkPermission();
   }
 
@@ -74,6 +75,7 @@ class _ChatMainScreenState extends State<ChatMainScreen> {
         otherUserId: otherUserId ?? '',
         senderName: userController.userModel.value?.name ?? '',
         message: '',
+        isGroup: Get.arguments['isGroup'],
         mediaUrl: downloadUrl,
         participants: [chatController.auth.currentUser!.uid, otherUserId ?? ''],
         type: 'voice',
@@ -136,40 +138,55 @@ class _ChatMainScreenState extends State<ChatMainScreen> {
                         alignment: isMine
                             ? Alignment.centerRight
                             : Alignment.centerLeft,
-                        child: Container(
-                          padding: const EdgeInsets.all(8),
-                          margin: const EdgeInsets.symmetric(horizontal: 12),
-                          decoration: BoxDecoration(
-                            color: Colors.blue,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: IntrinsicWidth(
-                            child: chat.type == 'voice'
-                                ? VoiceMessageWidget(
-                                    key: ValueKey(chat.id ??
-                                        chat.timestamp), // 🔑 unique identity
-                                    url: chat.mediaUrl ?? '',
-                                    timeStamp: chat.timestamp!)
-                                : Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text(
-                                        chat.message ?? '',
-                                        style: const TextStyle(fontSize: 14),
-                                        textAlign: TextAlign.left,
-                                      ),
-                                      Align(
-                                        alignment: Alignment.centerRight,
-                                        child: Text(
-                                            DateFormat('hh:mm a').format(
-                                                chat.timestamp!.toDate()),
-                                            style:
-                                                const TextStyle(fontSize: 10)),
-                                      ),
-                                    ],
-                                  ),
+                        child: Dismissible(
+                          key: Key(chat.id!),
+                          direction: DismissDirection.endToStart,
+                          confirmDismiss: (direction) async {
+                            return await chatController.deleteMsg(
+                                otherUserId!, chat.id!,
+                                isGroup: Get.arguments['isGroup']);
+                          },
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                margin:
+                                    const EdgeInsets.symmetric(horizontal: 12),
+                                decoration: BoxDecoration(
+                                  color: Colors.blue,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: IntrinsicWidth(
+                                  child: chat.type == 'voice'
+                                      ? VoiceMessageWidget(
+                                          key: ValueKey(chat.id ??
+                                              chat.timestamp), // 🔑 unique identity
+                                          url: chat.mediaUrl ?? '',
+                                          timeStamp: chat.timestamp!)
+                                      : Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Text(
+                                              chat.message ?? '',
+                                              style:
+                                                  const TextStyle(fontSize: 14),
+                                              textAlign: TextAlign.left,
+                                            ),
+                                            Align(
+                                              alignment: Alignment.centerRight,
+                                              child: Text(
+                                                  DateFormat('hh:mm a').format(
+                                                      chat.timestamp!.toDate()),
+                                                  style: const TextStyle(
+                                                      fontSize: 10)),
+                                            ),
+                                          ],
+                                        ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),

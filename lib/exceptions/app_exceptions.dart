@@ -27,5 +27,9 @@ class NetworkException extends AppException {
 
 /// Unexpected fallback exception
 class UnknownException extends AppException {
-  UnknownException([super.message = "Something went wrong"]);
+  final Object? originalException;
+  UnknownException([
+    super.message = "Something went wrong",
+    this.originalException,
+  ]);
 }

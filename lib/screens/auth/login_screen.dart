@@ -197,7 +197,6 @@ class _LoginScreenState extends State<LoginScreen> {
                         TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
                 TextButton(
                     onPressed: () => Get.toNamed(AppRoutes.registerView),
-                    //       onPressed: () => context.push('/register'),
                     child: const Text('Sign Up',
                         style: TextStyle(
                             fontSize: 16, fontWeight: FontWeight.w500)))

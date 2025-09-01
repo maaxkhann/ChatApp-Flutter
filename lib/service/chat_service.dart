@@ -27,7 +27,8 @@ class ChatService {
       String? groupName,
       String type = "text",
       bool isGroup = false}) async {
-    final chatId = groupId ?? channelId(auth.currentUser!.uid, otherUserId);
+    final chatId =
+        isGroup ? otherUserId : channelId(auth.currentUser!.uid, otherUserId);
 
     try {
       DocumentReference msgRef = firestore
@@ -83,7 +84,10 @@ class ChatService {
           .collection('messages')
           .orderBy('timestamp', descending: true)
           .snapshots()
-          .map((snap) => snap.docs.map((doc) {
+          .map((snap) => snap.docs.where((doc) {
+                final deletedFor = List<String>.from(doc['deletedFor'] ?? []);
+                return !deletedFor.contains(auth.currentUser!.uid);
+              }).map((doc) {
                 return ChatModel.fromMap(doc.data(), doc.id);
               }).toList());
     } on FirebaseException catch (e) {
@@ -150,8 +154,9 @@ class ChatService {
     }
   }
 
-  void markMessagesAsRead(String otherUserId) async {
-    final chatId = channelId(auth.currentUser!.uid, otherUserId);
+  void markMessagesAsRead(String otherUserId, {bool? isGroup = false}) async {
+    final chatId =
+        isGroup! ? otherUserId : channelId(auth.currentUser!.uid, otherUserId);
 
     final chatRef = await firestore
         .collection('chats')
@@ -165,6 +170,32 @@ class ChatService {
           'readBy': FieldValue.arrayUnion([auth.currentUser!.uid])
         });
       }
+    }
+  }
+
+  Future<bool> deleteMsg(String otherId, String msgId,
+      {bool? isGroup = false}) async {
+    final chatId =
+        isGroup! ? otherId : channelId(auth.currentUser!.uid, otherId);
+    try {
+      await firestore
+          .collection('chats')
+          .doc(chatId)
+          .collection('messages')
+          .doc(msgId)
+          .update({
+        'deletedFor': FieldValue.arrayUnion([auth.currentUser!.uid])
+      });
+      return true;
+    } on FirebaseException catch (e) {
+      // Firestore-specific error
+      throw handleFirestoreException(e);
+    } on SocketException catch (e) {
+      // Network issue
+      throw handleNetworkException(e);
+    } catch (e) {
+      // Unexpected error
+      throw UnknownException(e.toString());
     }
   }
 

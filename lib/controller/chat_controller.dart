@@ -67,15 +67,31 @@ class ChatController {
     });
   }
 
-  void markMessagesAsRead(String otherUserId) {
+  void markMessagesAsRead(String otherUserId, {bool? isGroup}) {
     try {
-      chatService.markMessagesAsRead(otherUserId);
+      chatService.markMessagesAsRead(otherUserId, isGroup: isGroup);
     } catch (e) {
       if (e is AppException) {
         Pops.showError(e.toString());
       } else {
         Pops.showError('Something went wrong');
       }
+    }
+  }
+
+  Future<bool> deleteMsg(String otherId, String msgId, {bool? isGroup}) async {
+    try {
+      final isDismissed =
+          chatService.deleteMsg(otherId, msgId, isGroup: isGroup);
+      Pops.showToast('Message deleted');
+      return isDismissed;
+    } catch (e) {
+      if (e is AppException) {
+        Pops.showError(e.toString());
+      } else {
+        Pops.showError('Something went wrong');
+      }
+      return false;
     }
   }
 

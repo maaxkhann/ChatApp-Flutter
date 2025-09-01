@@ -72,6 +72,7 @@ class ChatModel {
 
   Map<String, dynamic> toMap() {
     return {
+      'id': id,
       'currentUserId': currentUserId,
       'otherUserId': otherUserId,
       'senderName': senderName,
