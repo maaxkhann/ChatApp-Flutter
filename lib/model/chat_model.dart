@@ -57,12 +57,12 @@ class ChatModel {
         unreadCount: map['unreadCount'] ?? 0,
         isGroup: map['isGroup'] ?? false,
         timestamp: map['timestamp'] ?? null,
-        readBy: List<String>.from(map['readBy'] ?? []),
+        readBy: map['readBy'] != null ? List<String>.from(map['readBy']) : [],
         deletedFor: List<String>.from(map['deletedFor'] ?? []),
         // Chat-level extras
         participants: map['participants'] != null
             ? List<String>.from(map['participants'])
-            : null,
+            : [],
         groupName: map['groupName'] ?? '',
         lastMessage: map['lastMessage'] ?? '',
         lastMessageTime: map['timeStamp'] ??

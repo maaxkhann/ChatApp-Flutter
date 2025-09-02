@@ -42,7 +42,6 @@ class _ChatScreenState extends State<ChatScreen> {
             itemCount: snapshot.data?.length ?? 0,
             itemBuilder: (ctx, index) {
               final chatUsers = snapshot.data?[index];
-
               return ListTile(
                 onTap: () async {
                   final otherUserId = chatUsers?.participants?.firstWhere(
@@ -58,6 +57,7 @@ class _ChatScreenState extends State<ChatScreen> {
                       arguments: {
                         'otherUserId': otherUserId,
                         'isGroup': false,
+                        'name': chatUsers.userModel?.name
                       },
                     )?.then((val) => setState(() {}));
                   } else {

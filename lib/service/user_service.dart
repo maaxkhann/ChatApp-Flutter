@@ -32,6 +32,22 @@ class UserService {
         await firestore.collection('Users').doc(auth.currentUser?.uid).get();
     return UserModel.fromMap(userRef.data() as Map<String, dynamic>);
   }
+
+  Stream<UserModel> getOtherUserData(String otherId) async* {
+    DocumentSnapshot userRef =
+        await firestore.collection('Users').doc(otherId).get();
+    yield UserModel.fromMap(userRef.data() as Map<String, dynamic>);
+  }
+
+  Future<void> updatePresence(bool isOnline) async {
+    await FirebaseFirestore.instance
+        .collection('Users')
+        .doc(auth.currentUser!.uid)
+        .update({
+      'isOnline': isOnline,
+      'lastSeen': FieldValue.serverTimestamp(),
+    });
+  }
 }
 
 // import 'dart:io';

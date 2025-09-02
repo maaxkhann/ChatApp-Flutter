@@ -24,4 +24,12 @@ class UserController extends GetxController {
       userModel.value = val;
     });
   }
+
+  Stream<UserModel> getOtherUserData(String otherId) {
+    return userService.getOtherUserData(otherId);
+  }
+
+  Future<void> updatePresence(bool isOnline) {
+    return userService.updatePresence(isOnline);
+  }
 }

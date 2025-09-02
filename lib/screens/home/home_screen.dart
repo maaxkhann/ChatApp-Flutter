@@ -12,16 +12,18 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final userModel = Get.put(UserController());
+  final userController = Get.put(UserController());
+//  final userModel = Get.put(UserController());
   @override
   void initState() {
     super.initState();
-    userModel.getUserData();
+    userController.updatePresence(true).then((val) {
+      userController.getUserData();
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    final userController = Get.put(UserController());
     return Scaffold(
       appBar: AppBar(automaticallyImplyLeading: false),
       body: StreamBuilder(
